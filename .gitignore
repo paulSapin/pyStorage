@@ -5,6 +5,3 @@
 
 # JetBrains settings
 .idea
-
-# Cache
-__pycache__

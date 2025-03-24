@@ -3,7 +3,7 @@ from pystorage.tools import math
 from pystorage.data import EnergyPrices_UK
 from pystorage import *
 from sys import version_info as vi
-import pystorage as pys
+import pystorage
 
 python_version = f"Python {vi.major}.{vi.minor}"
 
@@ -32,7 +32,7 @@ def test_hello():
 # Test set country and year
 def test_setup():
     initialize(country='UK', year=2024)
-    assert pys.country == 'UK' and pys.year == 2024
+    assert pystorage.country == 'UK' and pystorage.year == 2024
 
 
 # Test data collection in pystorage.__init__()
@@ -135,19 +135,3 @@ def test_LCOS_ConventionalCAES():
     ES.updateEnergyPrices(electricity=EnergyPrices_UK.electricity, gas=EnergyPrices_UK.gas)
 
     assert all([x > 0 for x in ES.levelisedCostOfStorage])
-
-
-dt = 12  # h
-power = 100  # MW
-selfDischargeRate = 5  # %/day
-ES = powerToPower.ConventionalCAES().withInputs(
-    dischargeDuration=dt * 3600,  # seconds
-    dischargingPower=power * 1e6,  # W
-    chargingPower=power * 1e6,  # W
-    selfDischargeRate=math.convertRate(selfDischargeRate, 1 / 24),  # %/h
-    lifetime=60
-)
-
-ES.defineOperatingConditions(frequency=100, standby=0.)
-ES.updateDiscountRate(discountRate=0.035)
-ES.updateEnergyPrices(electricity=EnergyPrices_UK.electricity, gas=EnergyPrices_UK.gas)
