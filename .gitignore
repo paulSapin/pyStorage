@@ -1,5 +1,10 @@
 
 # pixi environments
 .pixi
-.idea
 *.egg-info
+
+# JetBrains settings
+.idea
+
+# Cache
+__pycache__
