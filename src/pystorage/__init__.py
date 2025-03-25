@@ -1,50 +1,36 @@
-from rich import print
-from sys import version_info as vi
-from sys import modules
+from __future__ import annotations
+from .systems import *
+from .components import *
+from .thermophysicalProperties import *
 
-python_version = f"Python {vi.major}.{vi.minor}"
+""" Add global variables and set function """
 
-""" Add a global variable for the country and year """
-this = modules[__name__]  # this is a pointer to the module object instance itself.
-this.country = None
-this.year = None
+Year: int | None = None
+Currency: str | None = None
+Country: str | None = None
 
 
-def initialize(country, year):
+def setScene(country: str, year: int, currency: str):
 
-    if this.country is None:  # also in local function scope. no scope specifier like global is needed
-        this.country = country
+    global Country
+    global Year
+    global Currency
+
+    if Country is None:
+        Country = country
     else:
         msg = "Country is already set to {0}."
-        raise RuntimeError(msg.format(this.country))
+        raise RuntimeError(msg.format(Country))
 
-    if this.year is None:  # also in local function scope. no scope specifier like global is needed
-        this.year = year
+    if Year is None:
+        Year = year
     else:
         msg = "Year is already set to {0}."
-        raise RuntimeError(msg.format(this.year))
+        raise RuntimeError(msg.format(Year))
 
+    if Currency is None:
+        Currency = currency
+    else:
+        msg = "Currency is already set to {0}."
+        raise RuntimeError(msg.format(Currency))
 
-def hello():
-
-    message = f"""
-        [bold red]pyStorage[/bold red]
-
-        Currently running with {python_version}
-
-        Multi-fidelity electricity storage modelling framework
-        Technology-agnostic, data-driven \u0026 comprehensive first-law models
-        Design \u0026 dispatch optimisation
-
-        Available in open-source Github repository: 
-        https://github.com/paulSapin/pyStorage
-
-        For more information, contact Dr Paul Sapin at p.sapin@imperial.ac.uk
-        """
-
-    return message
-
-
-def say_hello():
-
-    print(hello())
