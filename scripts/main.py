@@ -1,11 +1,12 @@
-import pystorage as pyes
+from pystorage.config import Currency, selectCurrency, setTheScene
+from pystorage.systems import DataDrivenElectricityStorageTechnology
 from rich import print
 import os
 import pwd
 import sys
 
-if pyes.config.Currency is None:
-    pyes.config.selectCurrency('USD')
+if Currency is None:
+    selectCurrency('USD')
 
 
 def hello(user):
@@ -45,32 +46,42 @@ if __name__ == '__main__':
     print(hello(user=pwd.getpwuid(os.getuid())[0]))
 
     """ Set the scene """
-    pyes.config.setTheScene(country='UK', year=2024)
-    CAES_UK = pyes.technologies.powerToPower.DataDrivenElectricityStorageTechnology().withInputs(dataSource='PNNL_CAES')
+    setTheScene(country='UK', year=2024, warning=False)
+    CAES_UK = DataDrivenElectricityStorageTechnology().withInputs(dataSource='PNNL_CAES')
 
     """ Change the scene """
-    pyes.config.setTheScene(country='France', year=2024)
-    CAES_FR = pyes.technologies.powerToPower.DataDrivenElectricityStorageTechnology().withInputs(dataSource='PNNL_CAES')
+    setTheScene(country='France', year=2024, warning=False)
+    CAES_FR = DataDrivenElectricityStorageTechnology().withInputs(dataSource='PNNL_CAES')
 
-    # # Systems specs
-    # dt = 4  # h
-    # power = 100  # MW
-    # selfDischargeRate = 0  # %/day
-    # frequency = 100.
-    # standby = 0.
-    # discountRate = 0.035
-    # lifetime = 60
-    #
-    # # Digital twin based on DataDrivenElectricityStorageTechnology
-    # CAES = pyes.technologies.powerToPower.DataDrivenElectricityStorageTechnology().withInputs(
-    #     dataSource='PNNL_CAES',
-    #     dischargeDuration=dt * 3600,  # seconds
-    #     dischargingPower=power * 1e6,  # W
-    #     chargingPower=power * 1e6,  # W
-    #     selfDischargeRate=selfDischargeRate,  # %/h
-    #     frequency=frequency,
-    #     standby=standby,
-    #     discountRate=discountRate,
-    #     lifetime=lifetime)
-    #
-    # CAES.updateEnergyPrices(currency='GBP', electricity=79.68, gas=31.27)
+    # Systems specs
+    dt = 4  # h
+    power = 100  # MW
+    selfDischargeRate = 0  # %/day
+    frequency = 100.
+    standby = 0.
+    discountRate = 0.035
+    lifetime = 60
+
+    # Digital twin based on DataDrivenElectricityStorageTechnology
+    CAES = DataDrivenElectricityStorageTechnology().withInputs(
+        dataSource='PNNL_CAES',
+        dischargeDuration=dt * 3600,  # seconds
+        dischargingPower=power * 1e6,  # W
+        chargingPower=power * 1e6,  # W
+        selfDischargeRate=selfDischargeRate,  # %/h
+        frequency=frequency,
+        standby=standby,
+        discountRate=discountRate,
+        lifetime=lifetime)
+
+    CAES.updateEnergyPrices(currency='GBP', electricity=79.68, gas=31.27)
+
+    x = CAES.CEPCI
+    y = CAES.investmentCost[1]
+
+    setTheScene(country='France', year=2015, warning=False)
+    CAES.updateScene()
+
+    setTheScene(country='France', year=2024, warning=False)
+    CAES.updateScene()
+

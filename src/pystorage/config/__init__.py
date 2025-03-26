@@ -5,6 +5,11 @@ Country = None
 
 def selectCurrency(currency: str):
 
+    import csv
+    import os
+
+    fileDirectory = os.path.dirname(os.path.realpath(__file__))
+
     global Currency
 
     if Currency is None:
@@ -12,6 +17,13 @@ def selectCurrency(currency: str):
     else:
         msg = "Currency is already set to {0}."
         raise RuntimeError(msg.format(Currency))
+
+    currency = {"Currency": Currency}
+
+    with open(fileDirectory + "/__currency__.csv", "w", newline="") as f:
+        w = csv.DictWriter(f, currency.keys())
+        w.writeheader()
+        w.writerow(currency)
 
 
 def setTheScene(*,
@@ -57,7 +69,7 @@ def setTheScene(*,
                 warnings.warn(msg)
             Year = year
 
-    scene = {"Country": Country, "Year": Year, "Currency": Currency}
+    scene = {"Country": Country, "Year": Year}
 
     with open(fileDirectory + "/__scene__.csv", "w", newline="") as f:
         w = csv.DictWriter(f, scene.keys())
@@ -73,12 +85,31 @@ def getTheScene():
     fileDirectory = os.path.dirname(os.path.realpath(__file__))
 
     if '__scene__.csv' not in os.listdir(fileDirectory):
-        raise NotImplementedError('Country, year and currency must be set ' +
+        raise NotImplementedError('Country & year must be set ' +
                                   'to perform a techno-economic analysis. \n' +
-                                  'Please use pystorage.set() function after imports in your main script.')
+                                  'Please use pystorage.config.setTheScene() function in your main script.')
     else:  # Get the scene
         mydict = csv.DictReader(open(fileDirectory + '/__scene__.csv'))
         mydict = [row for row in mydict]
         scene = mydict[0]
 
     return scene
+
+
+def getCurrency():
+
+    import os
+    import csv
+
+    fileDirectory = os.path.dirname(os.path.realpath(__file__))
+
+    if '__currency__.csv' not in os.listdir(fileDirectory):
+        raise NotImplementedError('Currency must be set ' +
+                                  'to perform a techno-economic analysis. \n' +
+                                  'Please use pystorage.config.selectCurrency() function in your main script.')
+    else:  # Get the scene
+        mydict = csv.DictReader(open(fileDirectory + '/__currency__.csv'))
+        mydict = [row for row in mydict]
+        currency = mydict[0]
+
+    return currency
