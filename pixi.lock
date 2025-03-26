@@ -3191,7 +3191,7 @@ packages:
 - pypi: .
   name: pystorage
   version: 0.1.0
-  sha256: 5f63f14b134fc87c74795a71bc7b010fe64315d0b3202277bcc2ef6af199bba5
+  sha256: 4a273907b5a80106750fe67c33cb30cea794a129cecffe2f95af5cde77b10961
   requires_dist:
   - pyfluids>=2.8.0,<3
   - rich>=13.9.4,<14
