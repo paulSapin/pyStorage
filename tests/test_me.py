@@ -1,25 +1,27 @@
-from pystorage.systems import powerToPower
-from pystorage.tools import math
 from scipy.interpolate import LinearNDInterpolator
-from pystorage.data import CEPCI, PNNL_CAES, currencyIndex
-from pystorage import *
+import numpy as np
+import pystorage as pyes
 
-print('Running tests.')
+""" Set the scene """
+pyes.setTheScene(country='UK', year=2024, noWarning=True)
+
+""" Select currency """
+if pyes.Currency is None:
+    pyes.selectCurrency(currency='USD')
 
 
 # Test set country and year
 def test_setup():
 
-    setTheScene(country='UK', year=2024, currency='GBP')
-    ES = powerToPower.DataDrivenElectricityStorageTechnology().withInputs(dataSource='PNNL_CAES')
+    ES = pyes.powerToPower.DataDrivenElectricityStorageTechnology().withInputs(dataSource='PNNL_CAES')
 
-    assert ES.year == pystorage.Year
+    assert ES.year == pyes.Year
 
 
 # Test creation of a conventional CAES object
 def test_CAES_DataDriven():
 
-    ES = powerToPower.DataDrivenElectricityStorageTechnology().withInputs(dataSource='PNNL_CAES')
+    ES = pyes.powerToPower.DataDrivenElectricityStorageTechnology().withInputs(dataSource='PNNL_CAES')
 
     assert (ES.type == 'D-CAES' and ES.secondarySource[0] == 'gas' and ES.model == 'PNNL')
 
@@ -30,12 +32,12 @@ def test_Design_DataDriven():
     dt = 12  # h
     power = 100  # MW
     selfDischargeRate = 5  # %/day
-    ES = powerToPower.DataDrivenElectricityStorageTechnology().withInputs(
+    ES = pyes.powerToPower.DataDrivenElectricityStorageTechnology().withInputs(
         dataSource='PNNL_CAES',
         dischargeDuration=dt * 3600,  # seconds
         dischargingPower=power * 1e6,  # W
         chargingPower=power * 1e6,  # W
-        selfDischargeRate=math.convertRate(selfDischargeRate, 1 / 24)  # %/h
+        selfDischargeRate=pyes.tools.math.convertRate(selfDischargeRate, 1 / 24)  # %/h
     )
 
     assert dt / ES.nominalChargeDuration_hours == ES.nominalRoundTripEfficiency
@@ -47,21 +49,21 @@ def test_DesignMethods_DataDriven():
     dt = 12  # h
     power = 100  # MW
     selfDischargeRate = 5  # %/day
-    ES = powerToPower.DataDrivenElectricityStorageTechnology().withInputs(
+    ES = pyes.powerToPower.DataDrivenElectricityStorageTechnology().withInputs(
         dataSource='PNNL_CAES',
         dischargeDuration=dt * 3600,  # seconds
         dischargingPower=power * 1e6,  # W
         chargingPower=power * 1e6,  # W
-        selfDischargeRate=math.convertRate(selfDischargeRate, 1 / 24),  # %/h
+        selfDischargeRate=pyes.tools.math.convertRate(selfDischargeRate, 1 / 24),  # %/h
         lifetime=60
     )
 
-    ES_twin = powerToPower.DataDrivenElectricityStorageTechnology().withInputs(dataSource='PNNL_CAES')
+    ES_twin = pyes.powerToPower.DataDrivenElectricityStorageTechnology().withInputs(dataSource='PNNL_CAES')
     ES_twin.updateDesign(
         dischargeDuration=dt * 3600,  # seconds
         dischargingPower=power * 1e6,  # W
         chargingPower=power * 1e6,  # W
-        selfDischargeRate=math.convertRate(selfDischargeRate, 1 / 24),  # %/h
+        selfDischargeRate=pyes.tools.math.convertRate(selfDischargeRate, 1 / 24),  # %/h
         lifetime=60
     )
 
@@ -85,17 +87,17 @@ def test_PNNL_database():
     """
 
     # Conversion factor
-    dataCurrencyIndex = currencyIndex('USD')
-    systemCurrencyIndex = currencyIndex(pystorage.Currency)
+    dataCurrencyIndex = pyes.currencyIndex('USD')
+    systemCurrencyIndex = pyes.currencyIndex(pyes.Currency)
     k = systemCurrencyIndex / dataCurrencyIndex
 
     # Extract data
-    duration = PNNL_CAES.duration.values
-    power = PNNL_CAES.power.values
-    roundtripEfficiency = PNNL_CAES.roundtripEfficiency.values
-    secondaryConsumptionRatio = PNNL_CAES.secondaryConsumptionRatio.values
-    powerIslandSpecificCost = PNNL_CAES.powerIslandSpecificCost.values * k
-    storeSpecificCost = PNNL_CAES.storeSpecificCost.values * k
+    duration = pyes.data.PNNL_CAES.duration.values
+    power = pyes.data.PNNL_CAES.power.values
+    roundtripEfficiency = pyes.data.PNNL_CAES.roundtripEfficiency.values
+    secondaryConsumptionRatio = pyes.data.PNNL_CAES.secondaryConsumptionRatio.values
+    powerIslandSpecificCost = pyes.data.PNNL_CAES.powerIslandSpecificCost.values * k
+    storeSpecificCost = pyes.data.PNNL_CAES.storeSpecificCost.values * k
 
     # Scattered interpolation for technical performance
     roundtripEfficiency_int = LinearNDInterpolator(list(zip(duration, power)), roundtripEfficiency)
@@ -119,11 +121,11 @@ def test_PNNL_database():
     # Interpolate data
     roundtripEfficiency = roundtripEfficiency_int(dt, power)
     gasConsumptionRatio = secConsumptionRatio_int(dt, power)
-    powerIslandSpecificCost = powerIslandSIC(dt, power) * (CEPCI[pystorage.Year] / CEPCI[2023])
-    storeSpecificCost = saltCavernSIC(dt, power) * (CEPCI[pystorage.Year] / CEPCI[2023])
+    powerIslandSpecificCost = powerIslandSIC(dt, power) * (pyes.data.CEPCI[pyes.Year] / pyes.data.CEPCI[2023])
+    storeSpecificCost = saltCavernSIC(dt, power) * (pyes.data.CEPCI[pyes.Year] / pyes.data.CEPCI[2023])
 
     # Construct the first object
-    CAES = powerToPower.ElectricityStorageTechnology().withInputs(
+    CAES = pyes.powerToPower.ElectricityStorageTechnology().withInputs(
         dischargeDuration=dt * 3600,  # seconds
         dischargingPower=power * 1e6,  # W
         chargingPower=power * 1e6,  # W
@@ -141,7 +143,7 @@ def test_PNNL_database():
     CAES.updateEnergyPrices(currency='GBP', electricity=79.68, gas=31.27)
 
     # Digital twin based on DataDrivenElectricityStorageTechnology
-    CAES_twin = powerToPower.DataDrivenElectricityStorageTechnology().withInputs(
+    CAES_twin = pyes.powerToPower.DataDrivenElectricityStorageTechnology().withInputs(
         dataSource='PNNL_CAES',
         dischargeDuration=dt * 3600,  # seconds
         dischargingPower=power * 1e6,  # W
