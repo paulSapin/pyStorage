@@ -29,8 +29,8 @@ def hello(user):
         Currently running pyStorage with {python_version}
 
         Multi-fidelity electricity storage modelling framework
-        Technology-agnostic, data-driven \u0026 comprehensive first-law models
-        Design \u0026 dispatch optimisation
+        Technology-agnostic, data-driven & comprehensive first-law models
+        Design & dispatch optimisation
 
         Available in open-source Github repository: 
         https://github.com/paulSapin/pyStorage
