@@ -15,7 +15,7 @@ def selectCurrency(currency: str):
     if Currency is None:
         Currency = currency
     else:
-        msg = "Currency is already set to {0}."
+        msg = "Currency is already set to {0}. This cannot be changed once selected."
         raise RuntimeError(msg.format(Currency))
 
     currency = {"Currency": Currency}
@@ -26,10 +26,7 @@ def selectCurrency(currency: str):
         w.writerow(currency)
 
 
-def setTheScene(*,
-                country=None,
-                year=None,
-                warning=True):
+def setTheScene(*, country=None, year=None, warning=True):
 
     import warnings
     import csv

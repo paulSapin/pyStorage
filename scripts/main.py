@@ -1,12 +1,13 @@
-from pystorage.config import Currency, selectCurrency, setTheScene
+from pystorage.config import selectCurrency, setTheScene, Currency
 from pystorage.systems import DataDrivenElectricityStorageTechnology
 from rich import print
+import numpy as np
 import os
 import pwd
 import sys
 
 if Currency is None:
-    selectCurrency('USD')
+    selectCurrency('GBP')
 
 
 def hello(user):
@@ -45,43 +46,33 @@ if __name__ == '__main__':
 
     print(hello(user=pwd.getpwuid(os.getuid())[0]))
 
-    """ Set the scene """
-    setTheScene(country='UK', year=2024, warning=False)
-    CAES_UK = DataDrivenElectricityStorageTechnology().withInputs(dataSource='PNNL_CAES')
-
-    """ Change the scene """
+    # Set the scene
     setTheScene(country='France', year=2024, warning=False)
-    CAES_FR = DataDrivenElectricityStorageTechnology().withInputs(dataSource='PNNL_CAES')
 
-    # Systems specs
-    dt = 4  # h
-    power = 100  # MW
-    selfDischargeRate = 0  # %/day
-    frequency = 100.
-    standby = 0.
-    discountRate = 0.035
-    lifetime = 60
-
-    # Digital twin based on DataDrivenElectricityStorageTechnology
+    # CAES DataDrivenElectricityStorageTechnology
     CAES = DataDrivenElectricityStorageTechnology().withInputs(
         dataSource='PNNL_CAES',
-        dischargeDuration=dt * 3600,  # seconds
-        dischargingPower=power * 1e6,  # W
-        chargingPower=power * 1e6,  # W
-        selfDischargeRate=selfDischargeRate,  # %/h
-        frequency=frequency,
-        standby=standby,
-        discountRate=discountRate,
-        lifetime=lifetime)
+        dischargeDuration=4 * 3600,  # seconds
+        dischargingPower=100 * 1e6,  # W
+        chargingPower=100 * 1e6,  # W
+        selfDischargeRate=0,  # %/h
+        frequency=100,
+        standby=0,
+        discountRate=0.035,
+        lifetime=60)
 
     CAES.updateEnergyPrices(currency='GBP', electricity=79.68, gas=31.27)
 
-    x = CAES.CEPCI
-    y = CAES.investmentCost[1]
+    LCOS1 = CAES.levelisedCostOfStorage
 
-    setTheScene(country='France', year=2015, warning=False)
+    setTheScene(country='France', year=2000, warning=False)
     CAES.updateScene()
 
     setTheScene(country='France', year=2024, warning=False)
     CAES.updateScene()
+
+    LCOS2 = CAES.levelisedCostOfStorage
+
+    if not np.isclose(LCOS1, LCOS2).all():
+        raise ValueError('Problem here!')
 
