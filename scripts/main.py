@@ -1,34 +1,36 @@
 import pystorage as pyes
 from rich import print
-from sys import version_info as vi
+import os
+import pwd
 
-pyes.setScene(country='UK', year=2025, currency='GBP')
-
-
-def hello():
-
-    python_version = f"Python {vi.major}.{vi.minor}"
-
-    message = f"""
-        [bold red]pyStorage[/bold red]
-
-        Currently running with {python_version}
-
-        Multi-fidelity electricity storage modelling framework
-        Technology-agnostic, data-driven \u0026 comprehensive first-law models
-        Design \u0026 dispatch optimisation
-
-        Available in open-source Github repository: 
-        https://github.com/paulSapin/pyStorage
-
-        For more information, contact Dr Paul Sapin at p.sapin@imperial.ac.uk
-        """
-
-    return message
+""" SET SCENE """
+if pyes.Currency is None:
+    pyes.setTheScene(country='UK', year=2024, currency='GBP')
 
 
 if __name__ == '__main__':
 
-    print(hello())
+    print(pyes.hello(user=pwd.getpwuid(os.getuid())[0]))
 
-    CAES = pyes.systems.powerToPower.DataDrivenElectricityStorageTechnology().withInputs(dataSource='PNNL_CAES')
+    # Systems specs
+    dt = 4  # h
+    power = 100  # MW
+    selfDischargeRate = 0  # %/day
+    frequency = 100.
+    standby = 0.
+    discountRate = 0.035
+    lifetime = 60
+
+    # Digital twin based on DataDrivenElectricityStorageTechnology
+    CAES = pyes.powerToPower.DataDrivenElectricityStorageTechnology().withInputs(
+        dataSource='PNNL_CAES',
+        dischargeDuration=dt * 3600,  # seconds
+        dischargingPower=power * 1e6,  # W
+        chargingPower=power * 1e6,  # W
+        selfDischargeRate=selfDischargeRate,  # %/h
+        frequency=frequency,
+        standby=standby,
+        discountRate=discountRate,
+        lifetime=lifetime)
+
+    CAES.updateEnergyPrices(currency='GBP', electricity=79.68, gas=31.27)

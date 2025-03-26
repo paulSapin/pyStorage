@@ -15,12 +15,12 @@ requires = ["hatchling"]
 
 [tool.pixi.workspace]
 channels = ["conda-forge"]
-platforms = ["osx-arm64"]
+platforms = ["osx-arm64", 'osx-64']
 
 # TASKS
 
 [tool.pixi.tasks]
-start = "python __init__.py"
+main = "python scripts/main.py"
 
 [tool.pixi.feature.test.tasks]
 test = "pytest"

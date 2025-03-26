@@ -1,30 +1,19 @@
 from pystorage.systems import powerToPower
 from pystorage.tools import math
 from scipy.interpolate import LinearNDInterpolator
-from pystorage.data import EnergyPrices_UK, CEPCI, PNNL_CAES, currencyIndex
+from pystorage.data import CEPCI, PNNL_CAES, currencyIndex
 from pystorage import *
+
+print('Running tests.')
 
 
 # Test set country and year
 def test_setup():
 
-    setScene(country='UK', year=2024, currency='GBP')
+    setTheScene(country='UK', year=2024, currency='GBP')
     ES = powerToPower.DataDrivenElectricityStorageTechnology().withInputs(dataSource='PNNL_CAES')
 
     assert ES.year == pystorage.Year
-
-
-# Test data collection in pystorage.__init__()
-def test_data():
-
-    # Collect data
-    electricityPrice = EnergyPrices_UK.electricity
-    gasPrice = EnergyPrices_UK.gas
-    hydrogenPrice = EnergyPrices_UK.hydrogen
-
-    assert (isinstance(electricityPrice, float) and
-            isinstance(gasPrice, float) and
-            isinstance(hydrogenPrice, float))
 
 
 # Test creation of a conventional CAES object
@@ -108,14 +97,14 @@ def test_PNNL_database():
     powerIslandSpecificCost = PNNL_CAES.powerIslandSpecificCost.values * k
     storeSpecificCost = PNNL_CAES.storeSpecificCost.values * k
 
-    # Scattered interpolant for technical performance
+    # Scattered interpolation for technical performance
     roundtripEfficiency_int = LinearNDInterpolator(list(zip(duration, power)), roundtripEfficiency)
     secConsumptionRatio_int = LinearNDInterpolator(list(zip(duration, power)), secondaryConsumptionRatio)
 
-    # Scattered interpolant for power island SIC
+    # Scattered interpolation for power island SIC
     powerIslandSIC = LinearNDInterpolator(list(zip(duration, power)), powerIslandSpecificCost)
 
-    # Scattered interpolant for store SIC
+    # Scattered interpolation for store SIC
     saltCavernSIC = LinearNDInterpolator(list(zip(duration, power)), storeSpecificCost)
 
     # Systems specs
@@ -149,7 +138,7 @@ def test_PNNL_database():
         powerIslandSpecificCost=powerIslandSpecificCost,
         storeSpecificCost=storeSpecificCost)
 
-    CAES.updateEnergyPrices(currency='GBP', electricity=EnergyPrices_UK.electricity, gas=EnergyPrices_UK.gas)
+    CAES.updateEnergyPrices(currency='GBP', electricity=79.68, gas=31.27)
 
     # Digital twin based on DataDrivenElectricityStorageTechnology
     CAES_twin = powerToPower.DataDrivenElectricityStorageTechnology().withInputs(
@@ -163,6 +152,6 @@ def test_PNNL_database():
         discountRate=discountRate,
         lifetime=lifetime)
 
-    CAES_twin.updateEnergyPrices(currency='GBP', electricity=EnergyPrices_UK.electricity, gas=EnergyPrices_UK.gas)
+    CAES_twin.updateEnergyPrices(currency='GBP', electricity=79.68, gas=31.27)
 
     assert np.isclose(CAES.levelisedCostOfStorage, CAES_twin.levelisedCostOfStorage[1])
