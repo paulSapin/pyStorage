@@ -1,0 +1,2 @@
+currency,time,power,energy,efficiency,energySpecificCost,powerSpecificCost
+USD,hour,kW,kWh,%,USD/kWh,USD/kW

@@ -1,0 +1,8 @@
+USD = [currency] = $
+EUR = nan USD = €
+GBP = nan USD = £
+
+@context conversion
+    EUR = 1 / 0.92 USD
+    GBP = 1 / 0.77 USD
+@end

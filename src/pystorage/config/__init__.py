@@ -3,27 +3,43 @@ Currency = None
 Country = None
 
 
-def selectCurrency(currency: str):
+def defineAdditionalUnits():
+
+    import pint
+    import os
+
+    fileDirectory = os.path.dirname(os.path.realpath(__file__))
+    UnitRegistry = pint.UnitRegistry()
+    UnitRegistry.load_definitions(fileDirectory + '/currencyConversionRates.txt')
+
+    return UnitRegistry
+
+
+def selectUnits(*,
+                currency: str = 'USD',
+                time: str = 'hour',
+                power: str = 'kW',
+                energy: str = 'kWh',
+                efficiency: str = '%',
+                ):
 
     import csv
     import os
 
     fileDirectory = os.path.dirname(os.path.realpath(__file__))
 
-    global Currency
+    units = {"currency": currency,
+             'time': time,
+             'power': power,
+             'energy': energy,
+             'efficiency': efficiency,
+             'energySpecificCost': currency + '/' + energy,
+             'powerSpecificCost': currency + '/' + power}
 
-    if Currency is None:
-        Currency = currency
-    else:
-        msg = "Currency is already set to {0}. This cannot be changed once selected."
-        raise RuntimeError(msg.format(Currency))
-
-    currency = {"Currency": Currency}
-
-    with open(fileDirectory + "/__currency__.csv", "w", newline="") as f:
-        w = csv.DictWriter(f, currency.keys())
+    with open(fileDirectory + "/units.csv", "w", newline="") as f:
+        w = csv.DictWriter(f, units.keys())
         w.writeheader()
-        w.writerow(currency)
+        w.writerow(units)
 
 
 def setTheScene(*, country=None, year=None, warning=True):
@@ -93,20 +109,27 @@ def getTheScene():
     return scene
 
 
-def getCurrency():
+def getUnits():
 
     import os
     import csv
 
     fileDirectory = os.path.dirname(os.path.realpath(__file__))
 
-    if '__currency__.csv' not in os.listdir(fileDirectory):
-        raise NotImplementedError('Currency must be set ' +
+    if 'units.csv' not in os.listdir(fileDirectory):
+        raise NotImplementedError('Units (including currency) must be set ' +
                                   'to perform a techno-economic analysis. \n' +
-                                  'Please use pystorage.config.selectCurrency() function in your main script.')
+                                  'Please use pystorage.config.selectUnits() function in your main script.')
     else:  # Get the scene
-        mydict = csv.DictReader(open(fileDirectory + '/__currency__.csv'))
+        mydict = csv.DictReader(open(fileDirectory + '/units.csv'))
         mydict = [row for row in mydict]
-        currency = mydict[0]
+        units = mydict[0]
 
-    return currency
+    return units
+
+
+# Select default units
+selectUnits()
+
+# Define unit registry
+ureg = defineAdditionalUnits()

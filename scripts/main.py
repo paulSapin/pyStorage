@@ -1,4 +1,4 @@
-from pystorage.config import selectCurrency, setTheScene, Currency
+from pystorage.config import selectUnits, setTheScene, ureg
 from pystorage.systems import DataDrivenElectricityStorageTechnology
 from rich import print
 import numpy as np
@@ -6,8 +6,8 @@ import os
 import pwd
 import sys
 
-if Currency is None:
-    selectCurrency('GBP')
+selectUnits(currency='USD')
+Q_ = ureg.Quantity
 
 
 def hello(user):
@@ -52,27 +52,28 @@ if __name__ == '__main__':
     # CAES DataDrivenElectricityStorageTechnology
     CAES = DataDrivenElectricityStorageTechnology().withInputs(
         dataSource='PNNL_CAES',
-        dischargeDuration=4 * 3600,  # seconds
-        dischargingPower=100 * 1e6,  # W
-        chargingPower=100 * 1e6,  # W
-        selfDischargeRate=0,  # %/h
-        frequency=100,
+        dischargeDuration=Q_(4, 'hour'),
+        dischargingPower=Q_(100, 'MW'),
+        chargingPower=Q_(100, 'MW'),
+        selfDischargeRate=Q_(100, '%/hour'),
+        frequency=Q_(100, '1/year'),
         standby=0,
-        discountRate=0.035,
-        lifetime=60)
+        discountRate=Q_(100, '%'),
+        lifetime=Q_(60, 'year'))
 
-    CAES.updateEnergyPrices(currency='GBP', electricity=79.68, gas=31.27)
-
-    LCOS1 = CAES.levelisedCostOfStorage
-
-    setTheScene(country='France', year=2000, warning=False)
-    CAES.updateScene()
-
-    setTheScene(country='France', year=2024, warning=False)
-    CAES.updateScene()
-
-    LCOS2 = CAES.levelisedCostOfStorage
-
-    if not np.isclose(LCOS1, LCOS2).all():
-        raise ValueError('Problem here!')
-
+    # CAES.updateEnergyPrices(currency='GBP', electricity=79.68, gas=31.27)
+    #
+    # LCOS1 = CAES.levelisedCostOfStorage
+    #
+    # setTheScene(country='France', year=2000, warning=False)
+    # CAES.updateScene()
+    #
+    # setTheScene(country='France', year=2024, warning=False)
+    # CAES.updateScene()
+    #
+    # LCOS2 = CAES.levelisedCostOfStorage
+    #
+    # if not np.isclose(LCOS1, LCOS2).all():
+    #     raise ValueError('Problem here!')
+    #
+    # x: ureg.Quantity | None = None

@@ -2,6 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import os
 import pandas as pd
+from ..config import ureg
 
 """ Data classes """
 
@@ -90,7 +91,10 @@ CEPCI = pd.read_csv(filepath_or_buffer=fileDirectory + '/CEPCI/CEPCI.csv',
                     header=None).squeeze('columns')
 
 # Compressed Air Electricity Storage (CAES) data from PNNL
-PNNL_CAES = pd.read_csv(filepath_or_buffer=fileDirectory + '/CAES/PNNL.csv', header=0)
+data = pd.read_csv(filepath_or_buffer=fileDirectory + '/CAES/PNNL.csv', header=[0, 1])
+PNNL_CAES = {}
+for field, unit in data.columns:
+    PNNL_CAES[field] = [float(x[0]) for x in data[field].values] * ureg[unit]
 
 # Gather currency data in a _Currencies object
 _currencyData = pd.read_csv(filepath_or_buffer=fileDirectory + '/Currencies/Currencies.csv', header=0)
