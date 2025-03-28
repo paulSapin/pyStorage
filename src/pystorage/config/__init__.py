@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 Year = None
 Currency = None
 Country = None
@@ -10,8 +12,8 @@ def defineAdditionalUnits():
 
     fileDirectory = os.path.dirname(os.path.realpath(__file__))
     UnitRegistry = pint.UnitRegistry()
-    UnitRegistry.load_definitions(fileDirectory + '/currencyConversionRates.txt')
-
+    UnitRegistry.load_definitions(fileDirectory + '/additionalUnits.txt')
+    UnitRegistry.load_definitions(fileDirectory + '/redefinedUnits.txt')
     return UnitRegistry
 
 
@@ -42,8 +44,9 @@ def selectUnits(*,
         w.writerow(units)
 
 
-def setTheScene(*, country=None, year=None, warning=True):
+def setTheScene(*, country: str | None = None, year: int | None = None, warning: bool = True, display: bool = False):
 
+    from rich import print
     import warnings
     import csv
     import os
@@ -54,6 +57,8 @@ def setTheScene(*, country=None, year=None, warning=True):
     global Country
     global Year
 
+    warningMessage = ''
+
     if country is not None:
 
         if not isinstance(country, str):
@@ -63,9 +68,10 @@ def setTheScene(*, country=None, year=None, warning=True):
             Country = country
         else:
             if Country != country and warning:
-                msg = (f"Country is already set to {Country}. " +
-                       f"Changing to {country} will only affect newly created objects.")
-                warnings.warn(msg)
+                warningMessage += (
+                        rf"[red]Country is already set to {Country}. " +
+                        "\n" +
+                        rf"Changing to {country} will only affect newly created objects. [/red]" + "\n")
             Country = country
 
     if year is not None:
@@ -77,18 +83,24 @@ def setTheScene(*, country=None, year=None, warning=True):
             Year = year
         else:
             if Year != year and warning:
-                msg = (f"Year is already set to {Year}. " +
-                       f"Changing to {year} will only affect newly created objects.")
-                warnings.warn(msg)
+                warningMessage += (
+                        rf"[red]Year is already set to {Year}." +
+                        "\n" +
+                        rf"Changing to {year} will only affect newly created objects. [/red]" + "\n")
+
             Year = year
 
     scene = {"Country": Country, "Year": Year}
+
+    if display:
+        print('\n' + rf'[bold green]Scene newly set: {Country} in {Year}[/bold green]' + '\n')
+    if warning and warningMessage:
+        print(warningMessage)
 
     with open(fileDirectory + "/__scene__.csv", "w", newline="") as f:
         w = csv.DictWriter(f, scene.keys())
         w.writeheader()
         w.writerow(scene)
-
 
 def getTheScene():
 
