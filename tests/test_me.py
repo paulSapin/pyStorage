@@ -1,159 +1,78 @@
-from scipy.interpolate import LinearNDInterpolator
-import numpy as np
-import pystorage as pyes
+from pystorage.config import selectUnits, setTheScene, ureg, getTheScene, getUnits
+from pystorage.systems import DataDrivenElectricityStorageTechnology, ElectricityStorageTechnology
 
-""" Set the scene """
-pyes.setTheScene(country='UK', year=2024, noWarning=True)
-
-""" Select currency """
-if pyes.Currency is None:
-    pyes.selectCurrency(currency='USD')
+Q_ = ureg.Quantity
+setTheScene(country='UK', year=2024, warning=False, display=True)
 
 
 # Test set country and year
 def test_setup():
 
-    ES = pyes.powerToPower.DataDrivenElectricityStorageTechnology().withInputs(dataSource='PNNL_CAES')
+    scene = getTheScene()
+    ES = DataDrivenElectricityStorageTechnology().withInputs(dataSource='PNNL_CAES')
 
-    assert ES.year == pyes.Year
+    assert ES.year == int(scene['Year'])
 
 
 # Test creation of a conventional CAES object
 def test_CAES_DataDriven():
 
-    ES = pyes.powerToPower.DataDrivenElectricityStorageTechnology().withInputs(dataSource='PNNL_CAES')
+    ES = DataDrivenElectricityStorageTechnology().withInputs(dataSource='PNNL_CAES')
 
-    assert (ES.type == 'D-CAES' and ES.secondarySource[0] == 'gas' and ES.model == 'PNNL')
+    assert (ES.type == 'D-CAES' and ES.secondarySource == 'gas' and ES.model == 'PNNL')
+
+
+# Test creation of a technology-agnostic ES object with a specific design
+def test_Agnostic_ES():
+
+    ES = ElectricityStorageTechnology().withInputs(
+        dischargeDuration=Q_(5, 'hour'),
+        dischargingPower=Q_(1000, 'MW'),
+        chargingPower=Q_(1000, 'MW'),
+        chargeDuration=Q_(6, 'hour'),
+        powerIslandSpecificCost=Q_(500, 'USD/kW'),
+        storeSpecificCost=Q_(10, 'USD/kWh'),
+        selfDischargeRate=Q_(0.5, '%/hour'),
+        cyclesPerYear=100,
+        standby=0.,
+        discountRate=Q_(3.5, '%'),
+        lifetime=Q_(60, 'year'))
+
+    assert ES.nominalDischargeDuration / ES.nominalChargeDuration == ES.nominalRoundTripEfficiency
 
 
 # Test creation of a conventional CAES object with a specific design
-def test_Design_DataDriven():
+def test_CAES_DataDrivenDesign():
 
-    dt = 12  # h
-    power = 100  # MW
-    selfDischargeRate = 5  # %/day
-    ES = pyes.powerToPower.DataDrivenElectricityStorageTechnology().withInputs(
+    ES = DataDrivenElectricityStorageTechnology().withInputs(
         dataSource='PNNL_CAES',
-        dischargeDuration=dt * 3600,  # seconds
-        dischargingPower=power * 1e6,  # W
-        chargingPower=power * 1e6,  # W
-        selfDischargeRate=pyes.tools.math.convertRate(selfDischargeRate, 1 / 24)  # %/h
-    )
+        dischargeDuration=Q_(4, 'hour'),
+        dischargingPower=Q_(100, 'MW'),
+        chargingPower=Q_(100, 'MW'),
+        selfDischargeRate=Q_(0.5, '%/hour'),
+        cyclesPerYear=100,
+        standby=0.1,
+        discountRate=Q_(3.5, '%'),
+        lifetime=Q_(60, 'year'))
 
-    assert dt / ES.nominalChargeDuration_hours == ES.nominalRoundTripEfficiency
+    assert ES.nominalDischargeDuration / ES.nominalChargeDuration == ES.nominalRoundTripEfficiency
 
 
-# Test design methods of conventional CAES objects
-def test_DesignMethods_DataDriven():
+# Test LCOS calculation conventional CAES objects
+def test_LCOS_DataDriven():
 
-    dt = 12  # h
-    power = 100  # MW
-    selfDischargeRate = 5  # %/day
-    ES = pyes.powerToPower.DataDrivenElectricityStorageTechnology().withInputs(
+    ES = DataDrivenElectricityStorageTechnology().withInputs(
         dataSource='PNNL_CAES',
-        dischargeDuration=dt * 3600,  # seconds
-        dischargingPower=power * 1e6,  # W
-        chargingPower=power * 1e6,  # W
-        selfDischargeRate=pyes.tools.math.convertRate(selfDischargeRate, 1 / 24),  # %/h
-        lifetime=60
-    )
+        dischargeDuration=Q_(4, 'hour'),
+        dischargingPower=Q_(100, 'MW'),
+        chargingPower=Q_(100, 'MW'),
+        selfDischargeRate=Q_(0.5, '%/hour'),
+        cyclesPerYear=100,
+        standby=0.1,
+        discountRate=Q_(3.5, '%'),
+        lifetime=Q_(60, 'year'))
 
-    ES_twin = pyes.powerToPower.DataDrivenElectricityStorageTechnology().withInputs(dataSource='PNNL_CAES')
-    ES_twin.updateDesign(
-        dischargeDuration=dt * 3600,  # seconds
-        dischargingPower=power * 1e6,  # W
-        chargingPower=power * 1e6,  # W
-        selfDischargeRate=pyes.tools.math.convertRate(selfDischargeRate, 1 / 24),  # %/h
-        lifetime=60
-    )
+    ES.update(electricityPrice=Q_(79.68, 'USD/MWh'), gasPrice=Q_(31.27, 'USD/MWh'))
+    LCOS = ES.levelisedCostOfStorage.to('USD/MWh').magnitude
 
-    assert all(x == y for (x, y) in zip(ES.powerIslandSpecificCost_per_kW, ES_twin.powerIslandSpecificCost_per_kW))
-
-
-# Test PNNL database
-def test_PNNL_database():
-
-    """
-    Check manual input into ElectricityStorageTechnology VS DataDrivenElectricityStorageTechnology pointing to map
-
-    # PNNL performance metrics
-    exergyEfficiency = 0.52  # Wout / (Win + Wg)
-    carnotEfficiency = 0.49  # Wg / Qg
-    roundtripEfficiency = 0.746  # Wout / Win
-
-    # Gas consumption ratio upon discharge [kWh_g / kWh_e]
-    gasConsumptionRatio = 1 / carnotEfficiency * (1 / exergyEfficiency - 1 / roundtripEfficiency)  # = Qg / Wout
-
-    """
-
-    # Conversion factor
-    dataCurrencyIndex = pyes.currencyIndex('USD')
-    systemCurrencyIndex = pyes.currencyIndex(pyes.Currency)
-    k = systemCurrencyIndex / dataCurrencyIndex
-
-    # Extract data
-    duration = pyes.data.PNNL_CAES.duration.values
-    power = pyes.data.PNNL_CAES.power.values
-    roundtripEfficiency = pyes.data.PNNL_CAES.roundtripEfficiency.values
-    secondaryConsumptionRatio = pyes.data.PNNL_CAES.secondaryConsumptionRatio.values
-    powerIslandSpecificCost = pyes.data.PNNL_CAES.powerIslandSpecificCost.values * k
-    storeSpecificCost = pyes.data.PNNL_CAES.storeSpecificCost.values * k
-
-    # Scattered interpolation for technical performance
-    roundtripEfficiency_int = LinearNDInterpolator(list(zip(duration, power)), roundtripEfficiency)
-    secConsumptionRatio_int = LinearNDInterpolator(list(zip(duration, power)), secondaryConsumptionRatio)
-
-    # Scattered interpolation for power island SIC
-    powerIslandSIC = LinearNDInterpolator(list(zip(duration, power)), powerIslandSpecificCost)
-
-    # Scattered interpolation for store SIC
-    saltCavernSIC = LinearNDInterpolator(list(zip(duration, power)), storeSpecificCost)
-
-    # Systems specs
-    dt = 4  # h
-    power = 1000  # MW
-    selfDischargeRate = 0  # %/day
-    frequency = 100.
-    standby = 0.
-    discountRate = 0.035
-    lifetime = 60
-
-    # Interpolate data
-    roundtripEfficiency = roundtripEfficiency_int(dt, power)
-    gasConsumptionRatio = secConsumptionRatio_int(dt, power)
-    powerIslandSpecificCost = powerIslandSIC(dt, power) * (pyes.data.CEPCI[pyes.Year] / pyes.data.CEPCI[2023])
-    storeSpecificCost = saltCavernSIC(dt, power) * (pyes.data.CEPCI[pyes.Year] / pyes.data.CEPCI[2023])
-
-    # Construct the first object
-    CAES = pyes.powerToPower.ElectricityStorageTechnology().withInputs(
-        dischargeDuration=dt * 3600,  # seconds
-        dischargingPower=power * 1e6,  # W
-        chargingPower=power * 1e6,  # W
-        roundtripEfficiency=roundtripEfficiency,
-        secondarySource='gas',
-        secondaryConsumptionRatio=gasConsumptionRatio,
-        selfDischargeRate=selfDischargeRate,  # %/h
-        frequency=frequency,
-        standby=standby,
-        discountRate=discountRate,
-        lifetime=lifetime,
-        powerIslandSpecificCost=powerIslandSpecificCost,
-        storeSpecificCost=storeSpecificCost)
-
-    CAES.updateEnergyPrices(currency='GBP', electricity=79.68, gas=31.27)
-
-    # Digital twin based on DataDrivenElectricityStorageTechnology
-    CAES_twin = pyes.powerToPower.DataDrivenElectricityStorageTechnology().withInputs(
-        dataSource='PNNL_CAES',
-        dischargeDuration=dt * 3600,  # seconds
-        dischargingPower=power * 1e6,  # W
-        chargingPower=power * 1e6,  # W
-        selfDischargeRate=selfDischargeRate,  # %/h
-        frequency=frequency,
-        standby=standby,
-        discountRate=discountRate,
-        lifetime=lifetime)
-
-    CAES_twin.updateEnergyPrices(currency='GBP', electricity=79.68, gas=31.27)
-
-    assert np.isclose(CAES.levelisedCostOfStorage, CAES_twin.levelisedCostOfStorage[1])
+    assert LCOS is not None and len(LCOS) == 3

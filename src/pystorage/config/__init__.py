@@ -102,6 +102,7 @@ def setTheScene(*, country: str | None = None, year: int | None = None, warning:
         w.writeheader()
         w.writerow(scene)
 
+
 def getTheScene():
 
     import os
