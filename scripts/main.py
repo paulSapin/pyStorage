@@ -1,5 +1,5 @@
 from pystorage.config import selectUnits, setTheScene, ureg
-from pystorage.systems import DataDrivenElectricityStorageTechnology
+from pystorage.systems import DataDrivenElectricityStorageTechnology, ElectricityStorageTechnology
 from rich import print
 import numpy as np
 import os
@@ -46,14 +46,25 @@ if __name__ == '__main__':
 
     print(hello(user=pwd.getpwuid(os.getuid())[0]))
 
-    setTheScene(country='France', year=2015, warning=True, display=True)
+    setTheScene(country='UK', year=2015, warning=False, display=True)
 
-    # # Set the scene
-    # setTheScene(country='France', year=2024, warning=False)
-    # CAES = DataDrivenElectricityStorageTechnology().withInputs(dataSource='PNNL_CAES')
-    # CAES.updateEnergyPrices(electricity=Q_(79.68, 'USD/MWh'), gas=Q_(31.27, 'USD/MWh'))
-    # setTheScene(country='UK', year=2015, warning=False)
-    # CAES.updateScene()
+    # Set the scene
+    ES = ElectricityStorageTechnology().withInputs(
+        dischargeDuration=Q_(5, 'hour'),
+        dischargingPower=Q_(1000, 'MW'),
+        chargingPower=Q_(1000, 'MW'),
+        chargeDuration=Q_(6, 'hour'),
+        powerIslandSpecificCost=Q_(500, 'USD/kW'),
+        storeSpecificCost=Q_(10, 'USD/kWh'),
+        selfDischargeRate=Q_(0.5, '%/hour'),
+        cyclesPerYear=100,
+        standby=0.,
+        discountRate=Q_(3.5, '%'),
+        lifetime=Q_(60, 'year'))
+
+    ES.update(electricityPrice=Q_(79.68, 'USD/MWh'), gasPrice=Q_(31.27, 'USD/MWh'))
+    LCOS = ES.levelisedCostOfStorage.to('USD/MWh')
+    print(f'LCOS ()= {round(np.mean(LCOS).magnitude)} $/MWh')
 
     CAES = DataDrivenElectricityStorageTechnology().withInputs(
         dataSource='PNNL_CAES',
